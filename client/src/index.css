@@ -1,0 +1,265 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(46, 78%, 98%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(46, 78%, 98%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(159, 51%, 35%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(195, 52%, 73%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Synergy Sphere custom colors */
+  --earth-green: hsl(159, 51%, 35%);
+  --sky-blue: hsl(195, 52%, 73%);
+  --sandstone: hsl(47, 33%, 67%);
+  --soft-white: hsl(46, 78%, 98%);
+  --forest-green: hsl(120, 61%, 34%);
+  --ocean-blue: hsl(207, 44%, 49%);
+  --warm-gray: hsl(33, 6%, 54%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(159, 51%, 35%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(195, 52%, 73%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-poppins antialiased bg-background text-foreground;
+    background: var(--soft-white);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Quicksand', sans-serif;
+  }
+}
+
+/* Custom Synergy Sphere styles */
+.font-quicksand {
+  font-family: 'Quicksand', sans-serif;
+}
+
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
+}
+
+.text-earth-green {
+  color: var(--earth-green);
+}
+
+.text-sky-blue {
+  color: var(--sky-blue);
+}
+
+.text-sandstone {
+  color: var(--sandstone);
+}
+
+.text-forest-green {
+  color: var(--forest-green);
+}
+
+.text-ocean-blue {
+  color: var(--ocean-blue);
+}
+
+.text-warm-gray {
+  color: var(--warm-gray);
+}
+
+.bg-earth-green {
+  background-color: var(--earth-green);
+}
+
+.bg-sky-blue {
+  background-color: var(--sky-blue);
+}
+
+.bg-sandstone {
+  background-color: var(--sandstone);
+}
+
+.bg-soft-white {
+  background-color: var(--soft-white);
+}
+
+.bg-forest-green {
+  background-color: var(--forest-green);
+}
+
+.bg-ocean-blue {
+  background-color: var(--ocean-blue);
+}
+
+.bg-warm-gray {
+  background-color: var(--warm-gray);
+}
+
+.border-earth-green {
+  border-color: var(--earth-green);
+}
+
+.border-sky-blue {
+  border-color: var(--sky-blue);
+}
+
+.border-sandstone {
+  border-color: var(--sandstone);
+}
+
+/* Organic shapes */
+.rounded-organic {
+  border-radius: 2rem 1rem 2rem 1rem;
+}
+
+.rounded-wave {
+  border-radius: 0 2rem 0 2rem;
+}
+
+/* Wave divider */
+.wave-divider {
+  clip-path: ellipse(100% 100% at 50% 0%);
+}
+
+/* Geodesic pattern background */
+.geodesic-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(46, 139, 87, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(135, 206, 235, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(194, 178, 128, 0.05) 0%, transparent 50%);
+}
+
+/* Ripple effect */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(46, 139, 87, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  z-index: 0;
+}
+
+.ripple-effect:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.ripple-effect > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Synergy score arc */
+.synergy-score-arc {
+  background: conic-gradient(from 0deg, var(--earth-green) 0% var(--score-percentage, 0%), #e5e7eb var(--score-percentage, 0%) 100%);
+}
+
+/* Three.js container */
+.globe-container {
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.1) 0%, rgba(46, 139, 87, 0.1) 100%);
+}
+
+/* Smooth animations */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.hover-scale {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Loading states */
+.loading-spinner {
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--earth-green);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--forest-green);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .mobile-navigation {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4;
+    z-index: 50;
+  }
+  
+  .mobile-nav-item {
+    @apply flex flex-col items-center space-y-1 text-xs;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
