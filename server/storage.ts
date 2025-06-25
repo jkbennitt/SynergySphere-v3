@@ -185,7 +185,7 @@ export class MemStorage implements IStorage {
   }
 
   // Comment operations
-  async getCommentsByolution(solutionId: number): Promise<Comment[]> {
+  async getCommentsBySolution(solutionId: number): Promise<Comment[]> {
     return Array.from(this.comments.values())
       .filter(comment => comment.solutionId === solutionId)
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());

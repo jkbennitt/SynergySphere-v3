@@ -149,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = req.user as any;
       res.json({ user: userWithoutPassword });
     } else {
-      res.status(401).json({ message: 'Not authenticated' });
+      res.json({ user: null });
     }
   });
 

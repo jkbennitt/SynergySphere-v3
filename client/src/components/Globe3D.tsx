@@ -2,12 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-
-declare global {
-  interface Window {
-    THREE: any;
-  }
-}
+import * as THREE from "three";
 
 interface GlobeData {
   [countryCode: string]: {
@@ -46,9 +41,7 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
   }, []);
 
   useEffect(() => {
-    if (!mountRef.current || !window.THREE || isLoading) return;
-
-    const { THREE } = window;
+    if (!mountRef.current || isLoading) return;
 
     // Scene setup
     const scene = new THREE.Scene();
