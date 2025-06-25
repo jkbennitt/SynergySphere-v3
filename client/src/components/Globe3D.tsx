@@ -98,17 +98,8 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     // Camera position
     camera.position.z = 5;
 
-    // Controls (if available)
+    // Manual rotation for now (OrbitControls can be added later)
     let controls: any = null;
-    if (window.THREE && (window as any).THREE.OrbitControls) {
-      controls = new (window as any).THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.enableZoom = true;
-      controls.enablePan = false;
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.5;
-    }
 
     // Store references
     sceneRef.current = { scene, camera, renderer, globe, controls };
