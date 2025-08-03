@@ -4,6 +4,23 @@
 
 Synergy Sphere is a full-stack web application that empowers global collaboration to address humanity's greatest climate challenges through interactive 3D visualization and innovative problem-solving. The platform combines real-time data visualization, climate simulation, and community-driven solution sharing to create an engaging experience for users to explore environmental data and design solutions.
 
+## Project Requirements Documentation
+
+This project follows detailed Product Requirements Documents (PRDs) that define the core vision, functionality, and implementation approach:
+
+### Core Planning Documents
+- **[MVP Requirements](docs/planner/mvp_requirements.md)** - Defines the Minimum Viable Product scope and features
+- **[User Journey](docs/planner/user_journey.md)** - Complete user experience flow from onboarding to collaboration
+
+### Technical Architecture
+- **[Tech Stack](docs/architecture/tech_stack.md)** - Comprehensive technology stack and rationale
+- **[Feature Specifications](docs/architecture/feature_specifications.md)** - In-depth Geoscope and World Game module specifications
+
+### Design Guidelines
+- **[Design Schema](docs/user/design_guidelines.md)** - Organic Futurism design system and UI/UX guidelines
+
+**Important**: These PRDs serve as the foundational blueprint for all development decisions. All features, design choices, and technical implementations must align with these specifications to maintain project vision and consistency.
+
 ## System Architecture
 
 ### Frontend Architecture
