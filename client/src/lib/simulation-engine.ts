@@ -10,7 +10,7 @@ const POLICY_MULTIPLIERS = {
   maximum: 2.0
 };
 
-// Economic factors with market variability
+// Economic factors
 const SOLAR_COST_BASE = 50; // Base cost billion USD per 1% global adoption
 const WIND_COST_BASE = 40; // Base cost billion USD per 1% global adoption
 const POLICY_COST_MULTIPLIER = 0.3; // Additional cost for policy implementation
@@ -18,12 +18,6 @@ const POLICY_COST_MULTIPLIER = 0.3; // Additional cost for policy implementation
 // Climate sensitivity parameters
 const CLIMATE_SENSITIVITY = 3.0; // °C per CO2 doubling
 const CO2_TO_TEMP_FACTOR = 0.0015; // Simplified temperature change per GtCO2e
-
-// Apply realistic scientific variance based on measurement uncertainty
-function getScientificVariance(baseValue: number, uncertaintyPercent: number = 5): number {
-  const uncertainty = baseValue * (uncertaintyPercent / 100);
-  return baseValue + (Math.random() - 0.5) * 2 * uncertainty;
-}
 
 // Market dynamics affecting costs based on real economic principles
 function calculateDynamicCosts(adoption: number, baseCost: number): number {
@@ -33,10 +27,7 @@ function calculateDynamicCosts(adoption: number, baseCost: number): number {
   // Supply constraints increase costs above 70% adoption
   const supplyPressure = adoption > 70 ? Math.pow((adoption - 70) / 100, 1.2) * 0.5 : 0;
   
-  // Small market uncertainty (±8%)
-  const marketVariance = getScientificVariance(1, 8);
-  
-  return baseCost * (1 - scaleDiscount + supplyPressure) * marketVariance;
+  return baseCost * (1 - scaleDiscount + supplyPressure);
 }
 
 export function runSimulation(challenge: string, parameters: SimulationParameters): SimulationOutcomes {
@@ -55,7 +46,7 @@ function simulateEmissionReduction(parameters: SimulationParameters): Simulation
   
   // Calculate renewable energy impact based on real-world data
   const totalRenewableAdoption = solarEnergyAdoption + windEnergyAdoption;
-  const policyMultiplier = getScientificVariance(POLICY_MULTIPLIERS[policyStrength], 3);
+  const policyMultiplier = POLICY_MULTIPLIERS[policyStrength];
   
   // Realistic CO2 reduction based on IEA projections
   const maxTheoreticalReduction = 75; // Based on IEA Net Zero scenario
@@ -66,7 +57,7 @@ function simulateEmissionReduction(parameters: SimulationParameters): Simulation
   const policyBonus = (policyMultiplier - 1) * 12; // Conservative policy impact
   
   // Portfolio diversity bonus (based on grid stability research)
-  const diversityRatio = Math.min(solarEnergyAdoption, windEnergyAdoption) / Math.max(solarEnergyAdoption, windEnergyAdoption);
+  const diversityRatio = Math.min(solarEnergyAdoption, windEnergyAdoption) / Math.max(solarEnergyAdoption, windEnergyAdoption, 1);
   const synergyBonus = diversityRatio * 5; // Up to 5% bonus for balanced portfolio
   
   // Grid integration challenges above 70% renewable penetration
@@ -106,20 +97,21 @@ function simulateEmissionReduction(parameters: SimulationParameters): Simulation
   const sustainabilityScore = calculateSustainabilityScore(totalRenewableAdoption, temperatureChange);
   const globalImpactScore = calculateGlobalImpactScore(co2Reduction, temperatureChange, feasibilityScore);
   
+  // Round all numeric values to 1 decimal place for consistency
   return {
-    temperatureChange,
-    co2Reduction,
-    economicImpact: totalCost,
-    roi,
-    feasibilityScore,
-    sustainabilityScore,
-    globalImpactScore
+    temperatureChange: Math.round(temperatureChange * 10) / 10,
+    co2Reduction: Math.round(co2Reduction * 10) / 10,
+    economicImpact: Math.round(totalCost * 10) / 10,
+    roi: Math.round(roi * 10) / 10,
+    feasibilityScore: Math.round(feasibilityScore),
+    sustainabilityScore: Math.round(sustainabilityScore),
+    globalImpactScore: Math.round(globalImpactScore)
   };
 }
 
 function simulateReforestation(parameters: SimulationParameters): SimulationOutcomes {
   const { solarEnergyAdoption, windEnergyAdoption, policyStrength } = parameters;
-  const policyMultiplier = getScientificVariance(POLICY_MULTIPLIERS[policyStrength], 5);
+  const policyMultiplier = POLICY_MULTIPLIERS[policyStrength];
   
   // Reforestation effectiveness based on scientific studies
   const forestEffectiveness = 0.6; // Average effectiveness from meta-analysis
@@ -158,14 +150,15 @@ function simulateReforestation(parameters: SimulationParameters): SimulationOutc
   const sustainabilityScore = Math.min(100, calculateSustainabilityScore(totalForestAction, temperatureChange) + 15);
   const globalImpactScore = calculateGlobalImpactScore(co2Reduction, temperatureChange, feasibilityScore);
   
+  // Round all numeric values to 1 decimal place for consistency
   return {
-    temperatureChange,
-    co2Reduction,
-    economicImpact,
-    roi,
-    feasibilityScore,
-    sustainabilityScore,
-    globalImpactScore
+    temperatureChange: Math.round(temperatureChange * 10) / 10,
+    co2Reduction: Math.round(co2Reduction * 10) / 10,
+    economicImpact: Math.round(economicImpact * 10) / 10,
+    roi: Math.round(roi * 10) / 10,
+    feasibilityScore: Math.round(feasibilityScore),
+    sustainabilityScore: Math.round(sustainabilityScore),
+    globalImpactScore: Math.round(globalImpactScore)
   };
 }
 

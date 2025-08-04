@@ -28,17 +28,21 @@ export default function Dashboard() {
     enabled: !!typedUser?.id,
   });
 
-  const handleLogout = () => {
-    // Show loading state and perform logout
-    toast({
-      title: "Logging out...",
-      description: "Please wait while we log you out.",
-    });
-    
-    // Small delay to show toast, then redirect
-    setTimeout(() => {
-      window.location.href = '/api/logout';
-    }, 500);
+  const handleLogout = async () => {
+    try {
+      // Clear any local state
+      localStorage.removeItem('synergy-sphere-tutorial');
+      
+      // Perform logout - use replace to ensure clean navigation
+      window.location.replace('/api/logout');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast({
+        title: "Logout failed",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!typedUser) {
@@ -138,8 +142,8 @@ export default function Dashboard() {
                     <div className="space-y-2">
                       {(userProgress.badges as string[]).map((badge: string) => (
                         <div key={badge} className="flex items-center space-x-2">
-                          <div className="w-6 h-6 bg-earth-green rounded-full flex items-center justify-center">
-                            <span className="text-xs">{getBadgeIcon(badge)}</span>
+                          <div className="w-6 h-6 bg-earth-green rounded-full flex items-center justify-center text-xs">
+                            {getBadgeIcon(badge)}
                           </div>
                           <span className="text-sm text-earth-green font-medium">
                             {getBadgeName(badge)}
