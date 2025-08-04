@@ -1,6 +1,8 @@
 
 # Design Schema for Synergy Sphere
 
+> **Version 1.0** | **Organic Futurism Design Guidelines**
+
 ## Introduction
 This schema outlines the design for the Synergy Sphere app, embodying the "Organic Futurism" concept. It blends organic shapes, natural tones, and futuristic elements to create a visually appealing and functional interface that honors Buckminster Fuller's vision and the 1960s' nature-tech harmony, while supporting the app's mission to address global challenges through data visualization and simulations.
 
@@ -72,3 +74,11 @@ This schema outlines the design for the Synergy Sphere app, embodying the "Organ
 - **Accessibility**: High contrast, clear typography, and keyboard navigation support - Ensures inclusivity.
 
 This schema ensures Synergy Sphere's design is visually striking, functional, and aligned with its purpose of fostering global understanding and collaboration through an Organic Futurism lens.
+
+---
+
+## 📝 Change Log
+
+| **Version** | **Date** | **Changes** |
+|-------------|----------|-------------|
+| **1.0** | 2025-01-27 | Initial design schema establishing Organic Futurism concept with earthy color palette, rounded UI elements, nature-inspired graphics, and Fuller-influenced geodesic patterns. |

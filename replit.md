@@ -158,5 +158,10 @@ The project maintains comprehensive documentation in the `/docs` folder:
   - MVP Requirements (v1.0) - Core feature specifications
   - User Journey (v1.1) - Complete user experience design
   - Sprint Planning (v1.0) - Storypoint-based planning template
+- **Architecture**: Versioned technical specifications
+  - Tech Stack (v1.0) - Technology choices and rationale
+  - Feature Specifications (v1.0) - Detailed module descriptions
+- **User**: Versioned design and user documentation
+  - Design Guidelines (v1.0) - Organic Futurism design schema
 
 All PRD documents include version control and change tracking to monitor refinements and maintain project alignment.
