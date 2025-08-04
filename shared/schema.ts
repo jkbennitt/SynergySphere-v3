@@ -1,24 +1,50 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb } from "drizzle-orm/pg-core";
+import { sql } from 'drizzle-orm';
+import {
+  index,
+  jsonb,
+  pgTable,
+  timestamp,
+  varchar,
+  text,
+  serial,
+  integer,
+  boolean,
+  real,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // Additional fields for our app
   bio: text("bio"),
   location: text("location"),
-  avatarUrl: text("avatar_url"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
   isActive: boolean("is_active").default(true).notNull(),
 });
 
 export const solutions = pgTable("solutions", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   challenge: text("challenge").notNull(), // "reduce_emissions", "reforestation", etc.
@@ -35,7 +61,7 @@ export const solutions = pgTable("solutions", {
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   solutionId: integer("solution_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   content: text("content").notNull(),
   parentId: integer("parent_id"), // For reply threads
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -45,13 +71,13 @@ export const comments = pgTable("comments", {
 export const likes = pgTable("likes", {
   id: serial("id").primaryKey(),
   solutionId: integer("solution_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const userProgress = pgTable("user_progress", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   regionsExplored: integer("regions_explored").default(0).notNull(),
   solutionsCreated: integer("solutions_created").default(0).notNull(),
   averageSynergyScore: real("average_synergy_score").default(0).notNull(),
@@ -62,16 +88,20 @@ export const userProgress = pgTable("user_progress", {
 
 export const globeInteractions = pgTable("globe_interactions", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   countryCode: text("country_code").notNull(),
   dataLayer: text("data_layer").notNull(), // "co2_emissions", "population_density", etc.
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
   isActive: true,
 });
 
@@ -105,14 +135,8 @@ export const insertGlobeInteractionSchema = createInsertSchema(globeInteractions
   timestamp: true,
 });
 
-// Login schema
-export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
 
 // Types
-export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Solution = typeof solutions.$inferSelect;
 export type InsertSolution = z.infer<typeof insertSolutionSchema>;
@@ -124,7 +148,6 @@ export type UserProgress = typeof userProgress.$inferSelect;
 export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
 export type GlobeInteraction = typeof globeInteractions.$inferSelect;
 export type InsertGlobeInteraction = z.infer<typeof insertGlobeInteractionSchema>;
-export type LoginRequest = z.infer<typeof loginSchema>;
 
 // Simulation parameter types
 export type SimulationParameters = {

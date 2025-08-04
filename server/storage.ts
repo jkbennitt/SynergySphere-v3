@@ -1,24 +1,26 @@
-import { 
+import {
   users, solutions, comments, likes, userProgress, globeInteractions,
-  type User, type InsertUser, type Solution, type InsertSolution,
+  type User, type UpsertUser, type Solution, type InsertSolution,
   type Comment, type InsertComment, type Like, type InsertLike,
   type UserProgress, type InsertUserProgress, type GlobeInteraction,
   type InsertGlobeInteraction
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
 
   // Solution operations
   getSolution(id: number): Promise<Solution | undefined>;
   getSolutionByShareableLink(link: string): Promise<Solution | undefined>;
-  getSolutionsByUser(userId: number): Promise<Solution[]>;
+  getSolutionsByUser(userId: string): Promise<Solution[]>;
   getAllSolutions(limit?: number, offset?: number): Promise<Solution[]>;
   createSolution(solution: InsertSolution): Promise<Solution>;
   updateSolution(id: number, updates: Partial<Solution>): Promise<Solution | undefined>;
@@ -30,127 +32,94 @@ export interface IStorage {
   deleteComment(id: number): Promise<boolean>;
 
   // Like operations
-  getLike(solutionId: number, userId: number): Promise<Like | undefined>;
+  getLike(solutionId: number, userId: string): Promise<Like | undefined>;
   createLike(like: InsertLike): Promise<Like>;
-  deleteLike(solutionId: number, userId: number): Promise<boolean>;
+  deleteLike(solutionId: number, userId: string): Promise<boolean>;
 
   // User progress operations
-  getUserProgress(userId: number): Promise<UserProgress | undefined>;
+  getUserProgress(userId: string): Promise<UserProgress | undefined>;
   createOrUpdateUserProgress(progress: InsertUserProgress): Promise<UserProgress>;
 
   // Globe interaction operations
   createGlobeInteraction(interaction: InsertGlobeInteraction): Promise<GlobeInteraction>;
-  getUserGlobeInteractions(userId: number): Promise<GlobeInteraction[]>;
+  getUserGlobeInteractions(userId: string): Promise<GlobeInteraction[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private solutions: Map<number, Solution>;
-  private comments: Map<number, Comment>;
-  private likes: Map<string, Like>; // key: `${solutionId}-${userId}`
-  private userProgress: Map<number, UserProgress>;
-  private globeInteractions: Map<number, GlobeInteraction>;
-  private currentUserId: number;
-  private currentSolutionId: number;
-  private currentCommentId: number;
-  private currentLikeId: number;
-  private currentProgressId: number;
-  private currentInteractionId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.solutions = new Map();
-    this.comments = new Map();
-    this.likes = new Map();
-    this.userProgress = new Map();
-    this.globeInteractions = new Map();
-    this.currentUserId = 1;
-    this.currentSolutionId = 1;
-    this.currentCommentId = 1;
-    this.currentLikeId = 1;
-    this.currentProgressId = 1;
-    this.currentInteractionId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = {
-      ...insertUser,
-      id,
-      createdAt: new Date(),
-      isActive: true,
-    };
-    this.users.set(id, user);
-    
-    // Initialize user progress
-    await this.createOrUpdateUserProgress({
-      userId: id,
-      regionsExplored: 0,
-      solutionsCreated: 0,
-      averageSynergyScore: 0,
-      totalCommunityInteractions: 0,
-      badges: [],
-    });
-
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   // Solution operations
   async getSolution(id: number): Promise<Solution | undefined> {
-    return this.solutions.get(id);
+    const [solution] = await db.select().from(solutions).where(eq(solutions.id, id));
+    return solution;
   }
 
   async getSolutionByShareableLink(link: string): Promise<Solution | undefined> {
-    return Array.from(this.solutions.values()).find(solution => solution.shareableLink === link);
+    const [solution] = await db.select().from(solutions).where(eq(solutions.shareableLink, link));
+    return solution;
   }
 
-  async getSolutionsByUser(userId: number): Promise<Solution[]> {
-    return Array.from(this.solutions.values())
-      .filter(solution => solution.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  async getSolutionsByUser(userId: string): Promise<Solution[]> {
+    return await db.select().from(solutions)
+      .where(eq(solutions.userId, userId))
+      .orderBy(solutions.createdAt);
   }
 
   async getAllSolutions(limit = 50, offset = 0): Promise<Solution[]> {
-    const allSolutions = Array.from(this.solutions.values())
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return allSolutions.slice(offset, offset + limit);
+    return await db.select().from(solutions)
+      .orderBy(solutions.createdAt)
+      .limit(limit)
+      .offset(offset);
   }
 
   async createSolution(insertSolution: InsertSolution): Promise<Solution> {
-    const id = this.currentSolutionId++;
     const shareableLink = nanoid(10);
-    const solution: Solution = {
-      ...insertSolution,
-      id,
-      shareableLink,
-      likesCount: 0,
-      commentsCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.solutions.set(id, solution);
+    const [solution] = await db
+      .insert(solutions)
+      .values({
+        ...insertSolution,
+        parameters: insertSolution.parameters as any,
+        outcomes: insertSolution.outcomes as any,
+        shareableLink,
+        likesCount: 0,
+        commentsCount: 0,
+      })
+      .returning();
 
     // Update user progress
     const progress = await this.getUserProgress(insertSolution.userId);
@@ -164,7 +133,7 @@ export class MemStorage implements IStorage {
         solutionsCreated: newSolutionsCount,
         averageSynergyScore: newAverageScore,
         totalCommunityInteractions: progress.totalCommunityInteractions,
-        badges: progress.badges,
+        badges: progress.badges as any,
       });
     }
 
@@ -172,34 +141,31 @@ export class MemStorage implements IStorage {
   }
 
   async updateSolution(id: number, updates: Partial<Solution>): Promise<Solution | undefined> {
-    const solution = this.solutions.get(id);
-    if (!solution) return undefined;
-    
-    const updatedSolution = { ...solution, ...updates, updatedAt: new Date() };
-    this.solutions.set(id, updatedSolution);
-    return updatedSolution;
+    const [solution] = await db
+      .update(solutions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(solutions.id, id))
+      .returning();
+    return solution;
   }
 
   async deleteSolution(id: number): Promise<boolean> {
-    return this.solutions.delete(id);
+    const result = await db.delete(solutions).where(eq(solutions.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Comment operations
   async getCommentsBySolution(solutionId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values())
-      .filter(comment => comment.solutionId === solutionId)
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return await db.select().from(comments)
+      .where(eq(comments.solutionId, solutionId))
+      .orderBy(comments.createdAt);
   }
 
   async createComment(insertComment: InsertComment): Promise<Comment> {
-    const id = this.currentCommentId++;
-    const comment: Comment = {
-      ...insertComment,
-      id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.comments.set(id, comment);
+    const [comment] = await db
+      .insert(comments)
+      .values(insertComment)
+      .returning();
 
     // Update solution comment count
     const solution = await this.getSolution(insertComment.solutionId);
@@ -218,7 +184,7 @@ export class MemStorage implements IStorage {
         solutionsCreated: progress.solutionsCreated,
         averageSynergyScore: progress.averageSynergyScore,
         totalCommunityInteractions: progress.totalCommunityInteractions + 1,
-        badges: progress.badges,
+        badges: progress.badges as any,
       });
     }
 
@@ -226,7 +192,7 @@ export class MemStorage implements IStorage {
   }
 
   async deleteComment(id: number): Promise<boolean> {
-    const comment = this.comments.get(id);
+    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
     if (!comment) return false;
 
     // Update solution comment count
@@ -237,22 +203,22 @@ export class MemStorage implements IStorage {
       });
     }
 
-    return this.comments.delete(id);
+    const result = await db.delete(comments).where(eq(comments.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Like operations
-  async getLike(solutionId: number, userId: number): Promise<Like | undefined> {
-    return this.likes.get(`${solutionId}-${userId}`);
+  async getLike(solutionId: number, userId: string): Promise<Like | undefined> {
+    const [like] = await db.select().from(likes)
+      .where(and(eq(likes.solutionId, solutionId), eq(likes.userId, userId)));
+    return like;
   }
 
   async createLike(insertLike: InsertLike): Promise<Like> {
-    const id = this.currentLikeId++;
-    const like: Like = {
-      ...insertLike,
-      id,
-      createdAt: new Date(),
-    };
-    this.likes.set(`${insertLike.solutionId}-${insertLike.userId}`, like);
+    const [like] = await db
+      .insert(likes)
+      .values(insertLike)
+      .returning();
 
     // Update solution like count
     const solution = await this.getSolution(insertLike.solutionId);
@@ -265,11 +231,11 @@ export class MemStorage implements IStorage {
     return like;
   }
 
-  async deleteLike(solutionId: number, userId: number): Promise<boolean> {
-    const key = `${solutionId}-${userId}`;
-    const deleted = this.likes.delete(key);
+  async deleteLike(solutionId: number, userId: string): Promise<boolean> {
+    const result = await db.delete(likes)
+      .where(and(eq(likes.solutionId, solutionId), eq(likes.userId, userId)));
     
-    if (deleted) {
+    if ((result.rowCount || 0) > 0) {
       // Update solution like count
       const solution = await this.getSolution(solutionId);
       if (solution) {
@@ -279,53 +245,44 @@ export class MemStorage implements IStorage {
       }
     }
 
-    return deleted;
+    return (result.rowCount || 0) > 0;
   }
 
   // User progress operations
-  async getUserProgress(userId: number): Promise<UserProgress | undefined> {
-    return Array.from(this.userProgress.values()).find(progress => progress.userId === userId);
+  async getUserProgress(userId: string): Promise<UserProgress | undefined> {
+    const [progress] = await db.select().from(userProgress)
+      .where(eq(userProgress.userId, userId));
+    return progress;
   }
 
   async createOrUpdateUserProgress(insertProgress: InsertUserProgress): Promise<UserProgress> {
-    const existing = await this.getUserProgress(insertProgress.userId);
-    
-    if (existing) {
-      const updated: UserProgress = {
-        ...existing,
+    const [progress] = await db
+      .insert(userProgress)
+      .values({
         ...insertProgress,
-        updatedAt: new Date(),
-      };
-      this.userProgress.set(existing.id, updated);
-      return updated;
-    } else {
-      const id = this.currentProgressId++;
-      const progress: UserProgress = {
-        ...insertProgress,
-        id,
-        updatedAt: new Date(),
-      };
-      this.userProgress.set(id, progress);
-      return progress;
-    }
+        badges: insertProgress.badges as any,
+      })
+      .onConflictDoUpdate({
+        target: userProgress.userId,
+        set: {
+          ...insertProgress,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return progress;
   }
 
   // Globe interaction operations
   async createGlobeInteraction(insertInteraction: InsertGlobeInteraction): Promise<GlobeInteraction> {
-    const id = this.currentInteractionId++;
-    const interaction: GlobeInteraction = {
-      ...insertInteraction,
-      id,
-      timestamp: new Date(),
-    };
-    this.globeInteractions.set(id, interaction);
+    const [interaction] = await db
+      .insert(globeInteractions)
+      .values(insertInteraction)
+      .returning();
 
     // Update user progress - regions explored
-    const uniqueCountries = new Set(
-      Array.from(this.globeInteractions.values())
-        .filter(i => i.userId === insertInteraction.userId)
-        .map(i => i.countryCode)
-    );
+    const userInteractions = await this.getUserGlobeInteractions(insertInteraction.userId);
+    const uniqueCountries = new Set(userInteractions.map(i => i.countryCode));
 
     const progress = await this.getUserProgress(insertInteraction.userId);
     if (progress) {
@@ -335,18 +292,18 @@ export class MemStorage implements IStorage {
         solutionsCreated: progress.solutionsCreated,
         averageSynergyScore: progress.averageSynergyScore,
         totalCommunityInteractions: progress.totalCommunityInteractions,
-        badges: progress.badges,
+        badges: progress.badges as any,
       });
     }
 
     return interaction;
   }
 
-  async getUserGlobeInteractions(userId: number): Promise<GlobeInteraction[]> {
-    return Array.from(this.globeInteractions.values())
-      .filter(interaction => interaction.userId === userId)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  async getUserGlobeInteractions(userId: string): Promise<GlobeInteraction[]> {
+    return await db.select().from(globeInteractions)
+      .where(eq(globeInteractions.userId, userId))
+      .orderBy(globeInteractions.timestamp);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

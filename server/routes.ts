@@ -1,154 +1,38 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import session from "express-session";
-import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
-import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import { insertUserSchema, loginSchema, insertSolutionSchema, insertCommentSchema, insertLikeSchema, insertGlobeInteractionSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated } from "./replitAuth";
+import { insertSolutionSchema, insertCommentSchema, insertLikeSchema, insertGlobeInteractionSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session configuration
-  app.use(session({
-    secret: process.env.SESSION_SECRET || "synergy-sphere-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-      secure: false, // Set to true in production with HTTPS
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-  }));
-
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  // Passport configuration
-  passport.use(new LocalStrategy(
-    async (username: string, password: string, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false, { message: 'Invalid username or password' });
-        }
-
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-          return done(null, false, { message: 'Invalid username or password' });
-        }
-
-        return done(null, user);
-      } catch (error) {
-        return done(error);
-      }
-    }
-  ));
-
-  passport.serializeUser((user: any, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (error) {
-      done(error);
-    }
-  });
-
-  // Authentication middleware
-  const requireAuth = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated()) {
-      return next();
-    }
-    res.status(401).json({ message: 'Authentication required' });
-  };
+  // Auth middleware
+  await setupAuth(app);
 
   // Auth routes
-  app.post('/api/auth/register', async (req, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(userData.username);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Username already exists' });
-      }
-
-      const existingEmail = await storage.getUserByEmail(userData.email);
-      if (existingEmail) {
-        return res.status(400).json({ message: 'Email already registered' });
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      // Create user
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-
-      // Log in the user
-      req.login(user, (err: any) => {
-        if (err) {
-          return res.status(500).json({ message: 'Login failed after registration' });
-        }
-        const { password, ...userWithoutPassword } = user;
-        res.json({ user: userWithoutPassword });
-      });
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
     } catch (error) {
-      console.error('Registration error:', error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid input data', errors: error.errors });
-      }
-      res.status(500).json({ message: 'Registration failed' });
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
-  app.post('/api/auth/login', (req, res, next) => {
+  // Legacy auth endpoint for compatibility
+  app.get('/api/auth/me', async (req: any, res) => {
     try {
-      loginSchema.parse(req.body);
+      if (req.isAuthenticated() && req.user?.claims?.sub) {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        res.json({ user });
+      } else {
+        res.json({ user: null });
+      }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid input data', errors: error.errors });
-      }
-    }
-
-    passport.authenticate('local', (err: any, user: any, info: any) => {
-      if (err) {
-        return res.status(500).json({ message: 'Authentication error' });
-      }
-      if (!user) {
-        return res.status(401).json({ message: info.message || 'Authentication failed' });
-      }
-      
-      req.login(user, (loginErr: any) => {
-        if (loginErr) {
-          return res.status(500).json({ message: 'Login failed' });
-        }
-        
-        const { password, ...userWithoutPassword } = user;
-        res.json({ user: userWithoutPassword });
-      });
-    })(req, res, next);
-  });
-
-  app.post('/api/auth/logout', (req, res) => {
-    req.logout((err: any) => {
-      if (err) {
-        return res.status(500).json({ message: 'Logout failed' });
-      }
-      res.json({ message: 'Logged out successfully' });
-    });
-  });
-
-  app.get('/api/auth/me', async (req, res) => {
-    if (req.isAuthenticated() && req.user) {
-      const { password, ...userWithoutPassword } = req.user as any;
-      res.json({ user: userWithoutPassword });
-    } else {
+      console.error("Error fetching auth status:", error);
       res.json({ user: null });
     }
   });
@@ -166,7 +50,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const user = await storage.getUser(solution.userId);
           return {
             ...solution,
-            user: user ? { id: user.id, username: user.username, firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : null
+            user: user ? { 
+              id: user.id, 
+              email: user.email, 
+              firstName: user.firstName, 
+              lastName: user.lastName, 
+              profileImageUrl: user.profileImageUrl 
+            } : null
           };
         })
       );
@@ -196,14 +86,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const commentUser = await storage.getUser(comment.userId);
           return {
             ...comment,
-            user: commentUser ? { id: commentUser.id, username: commentUser.username, firstName: commentUser.firstName, lastName: commentUser.lastName, avatarUrl: commentUser.avatarUrl } : null
+            user: commentUser ? { 
+              id: commentUser.id, 
+              email: commentUser.email, 
+              firstName: commentUser.firstName, 
+              lastName: commentUser.lastName, 
+              profileImageUrl: commentUser.profileImageUrl 
+            } : null
           };
         })
       );
 
       res.json({
         ...solution,
-        user: user ? { id: user.id, username: user.username, firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : null,
+        user: user ? { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName, 
+          lastName: user.lastName, 
+          profileImageUrl: user.profileImageUrl 
+        } : null,
         comments: commentsWithUsers
       });
     } catch (error) {
@@ -223,7 +125,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(solution.userId);
       res.json({
         ...solution,
-        user: user ? { id: user.id, username: user.username, firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : null
+        user: user ? { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName, 
+          lastName: user.lastName, 
+          profileImageUrl: user.profileImageUrl 
+        } : null
       });
     } catch (error) {
       console.error('Error fetching solution by link:', error);
@@ -231,11 +139,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/solutions', requireAuth, async (req, res) => {
+  app.post('/api/solutions', isAuthenticated, async (req: any, res) => {
     try {
       const solutionData = insertSolutionSchema.parse({
         ...req.body,
-        userId: (req.user as any).id
+        userId: req.user.claims.sub
       });
       
       const solution = await storage.createSolution(solutionData);
@@ -251,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users/:id/solutions', async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const solutions = await storage.getSolutionsByUser(userId);
       res.json(solutions);
     } catch (error) {
@@ -261,13 +169,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comments routes
-  app.post('/api/solutions/:id/comments', requireAuth, async (req, res) => {
+  app.post('/api/solutions/:id/comments', isAuthenticated, async (req: any, res) => {
     try {
       const solutionId = parseInt(req.params.id);
       const commentData = insertCommentSchema.parse({
         ...req.body,
         solutionId,
-        userId: (req.user as any).id
+        userId: req.user.claims.sub
       });
       
       const comment = await storage.createComment(commentData);
@@ -275,7 +183,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({
         ...comment,
-        user: user ? { id: user.id, username: user.username, firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : null
+        user: user ? { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName, 
+          lastName: user.lastName, 
+          profileImageUrl: user.profileImageUrl 
+        } : null
       });
     } catch (error) {
       console.error('Error creating comment:', error);
@@ -287,10 +201,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Likes routes
-  app.post('/api/solutions/:id/like', requireAuth, async (req, res) => {
+  app.post('/api/solutions/:id/like', isAuthenticated, async (req: any, res) => {
     try {
       const solutionId = parseInt(req.params.id);
-      const userId = (req.user as any).id;
+      const userId = req.user.claims.sub;
       
       // Check if already liked
       const existingLike = await storage.getLike(solutionId, userId);
@@ -306,10 +220,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/solutions/:id/like', requireAuth, async (req, res) => {
+  app.delete('/api/solutions/:id/like', isAuthenticated, async (req: any, res) => {
     try {
       const solutionId = parseInt(req.params.id);
-      const userId = (req.user as any).id;
+      const userId = req.user.claims.sub;
       
       const deleted = await storage.deleteLike(solutionId, userId);
       if (!deleted) {
@@ -326,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User progress routes
   app.get('/api/users/:id/progress', async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const progress = await storage.getUserProgress(userId);
       
       if (!progress) {
@@ -341,11 +255,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Globe interactions routes
-  app.post('/api/globe/interactions', requireAuth, async (req, res) => {
+  app.post('/api/globe/interactions', isAuthenticated, async (req: any, res) => {
     try {
       const interactionData = insertGlobeInteractionSchema.parse({
         ...req.body,
-        userId: (req.user as any).id
+        userId: req.user.claims.sub
       });
       
       const interaction = await storage.createGlobeInteraction(interactionData);
