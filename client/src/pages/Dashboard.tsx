@@ -29,8 +29,16 @@ export default function Dashboard() {
   });
 
   const handleLogout = () => {
-    // Navigate to Replit logout endpoint
-    window.location.href = '/api/logout';
+    // Show loading state and perform logout
+    toast({
+      title: "Logging out...",
+      description: "Please wait while we log you out.",
+    });
+    
+    // Small delay to show toast, then redirect
+    setTimeout(() => {
+      window.location.href = '/api/logout';
+    }, 500);
   };
 
   if (!typedUser) {
@@ -38,7 +46,7 @@ export default function Dashboard() {
     return null;
   }
 
-  const getBadgeIcon = (badge: string) => {
+  const getBadgeIcon = (badge: string): string => {
     switch (badge) {
       case 'master_solver': return '🎯';
       case 'collaborator': return '🤝';
@@ -128,7 +136,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <h4 className="font-medium text-gray-700">Badges Earned</h4>
                     <div className="space-y-2">
-                      {(userProgress.badges as string[]).map((badge: string, index: number) => (
+                      {(userProgress.badges as string[]).map((badge: string) => (
                         <div key={badge} className="flex items-center space-x-2">
                           <div className="w-6 h-6 bg-earth-green rounded-full flex items-center justify-center">
                             <span className="text-xs">{getBadgeIcon(badge)}</span>

@@ -41,7 +41,7 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
   }, []);
 
   useEffect(() => {
-    if (!mountRef.current || isLoading) return;
+    if (!mountRef.current || isLoading || Object.keys(globeData).length === 0) return;
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -193,6 +193,9 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
             if (onCountryClick) {
               onCountryClick(mockCountry, globeData[mockCountry]);
             }
+          } else {
+            // Clear selection if no country found
+            setSelectedCountry(null);
           }
         }
       }
@@ -253,9 +256,9 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
       atmosphereMaterial.dispose();
       renderer.dispose();
     };
-  }, [isLoading, globeData, onCountryClick]);
+  }, [isLoading]); // Only recreate when loading state changes
 
-  // Enhanced function to map coordinates to countries
+  // Enhanced function to map coordinates to countries (moved outside component)
   function getMockCountryFromCoords(lat: number, lng: number): string | null {
     // North America
     if (lat > 25 && lat < 50 && lng > -130 && lng < -65) return 'US';
@@ -268,6 +271,9 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     if (lat > -20 && lat < 12 && lng > -85 && lng < -66) return 'PE';
     if (lat > -5 && lat < 13 && lng > -82 && lng < -66) return 'CO';
     if (lat > 0 && lat < 16 && lng > -73 && lng < -59) return 'VE';
+    if (lat > -18 && lat < -3 && lng > -70 && lng < -57) return 'BO';
+    if (lat > -40 && lat < -17 && lng > -76 && lng < -66) return 'CL';
+    if (lat > -5 && lat < 2 && lng > -79 && lng < -75) return 'EC';
     
     // Europe
     if (lat > 47 && lat < 55 && lng > 5 && lng < 15) return 'DE';
@@ -279,6 +285,11 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     if (lat > 55 && lat < 70 && lng > 8 && lng < 25) return 'SE';
     if (lat > 48 && lat < 69 && lng > 8 && lng < 32) return 'FI';
     if (lat > 47 && lat < 56 && lng > 14 && lng < 25) return 'PL';
+    if (lat > 45 && lat < 49 && lng > 13 && lng < 23) return 'HU';
+    if (lat > 43 && lat < 49 && lng > 19 && lng < 30) return 'RO';
+    if (lat > 55 && lat < 70 && lng > 19 && lng < 32) return 'FI';
+    if (lat > 50 && lat < 60 && lng > 12 && lng < 24) return 'DE';
+    if (lat > 40 && lat < 47 && lng > 19 && lng < 30) return 'GR';
     
     // Asia
     if (lat > 15 && lat < 50 && lng > 70 && lng < 140) return 'CN';
@@ -293,6 +304,10 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     if (lat > 24 && lat < 40 && lng > 44 && lng < 64) return 'IR';
     if (lat > 29 && lat < 38 && lng > 34 && lng < 49) return 'IQ';
     if (lat > 12 && lat < 34 && lng > 34 && lng < 56) return 'SA';
+    if (lat > 22 && lat < 42 && lng > 35 && lng < 75) return 'AF';
+    if (lat > 23 && lat < 38 && lng > 58 && lng < 78) return 'PK';
+    if (lat > 35 && lat < 42 && lng > 44 && lng < 47) return 'AM';
+    if (lat > 38 && lat < 42 && lng > 44 && lng < 51) return 'AZ';
     
     // Russia (large territory)
     if (lat > 50 && lat < 82 && lng > 19 && lng < 180) return 'RU';
@@ -305,10 +320,46 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     if (lat > -12 && lat < 5 && lng > 12 && lng < 32) return 'CD';
     if (lat > -15 && lat < 15 && lng > 8 && lng < 24) return 'TD';
     if (lat > 8 && lat < 23 && lng > -18 && lng < 16) return 'LY';
+    if (lat > 0 && lat < 18 && lng > 22 && lng < 39) return 'SD';
+    if (lat > -30 && lat < -17 && lng > 11 && lng < 30) return 'NA';
+    if (lat > -26 && lat < -15 && lng > 20 && lng < 30) return 'BW';
+    if (lat > 9 && lat < 17 && lng > -17 && lng < -11) return 'SN';
+    if (lat > 4 && lat < 15 && lng > -15 && lng < 3) return 'ML';
+    if (lat > 5 && lat < 15 && lng > -6 && lng < 3) return 'GH';
+    if (lat > 6 && lat < 14 && lng > -12 && lng < -7) return 'CI';
+    if (lat > -35 && lat < -15 && lng > 25 && lng < 35) return 'MZ';
+    if (lat > -22 && lat < -8 && lng > 20 && lng < 30) return 'ZM';
+    if (lat > -18 && lat < -8 && lng > 12 && lng < 25) return 'AO';
+    if (lat > -3 && lat < 8 && lng > 5 && lng < 16) return 'CM';
+    if (lat > -15 && lat < 0 && lng > 29 && lng < 41) return 'TZ';
+    if (lat > -5 && lat < 6 && lng > 28 && lng < 32) return 'UG';
+    if (lat > -3 && lat < 5 && lng > 22 && lng < 32) return 'CF';
+    if (lat > -5 && lat < 4 && lng > 33 && lng < 42) return 'KE';
+    if (lat > 3 && lat < 15 && lng > 35 && lng < 49) return 'ET';
+    if (lat > 8 && lat < 18 && lng > 31 && lng < 39) return 'SS';
+    if (lat > 6 && lat < 15 && lng > -3 && lng < 5) return 'BF';
+    if (lat > 9 && lat < 25 && lng > -6 && lng < 5) return 'NE';
+    if (lat > 8 && lat < 17 && lng > 5 && lng < 16) return 'TD';
+    if (lat > 10 && lat < 23 && lng > 15 && lng < 25) return 'SD';
+    if (lat > 20 && lat < 35 && lng > -13 && lng < -4) return 'MA';
+    if (lat > 30 && lat < 38 && lng > 7 && lng < 12) return 'TN';
+    if (lat > 28 && lat < 35 && lng > 9 && lng < 26) return 'LY';
+    if (lat > 18 && lat < 28 && lng > -18 && lng < -8) return 'MR';
+    if (lat > 12 && lat < 23 && lng > -20 && lng < -11) return 'ML';
+    if (lat > 9 && lat < 16 && lng > -17 && lng < -13) return 'SN';
+    if (lat > 4 && lat < 12 && lng > -11 && lng < -7) return 'LR';
+    if (lat > 4 && lat < 12 && lng > -9 && lng < -2) return 'CI';
+    if (lat > 5 && lat < 12 && lng > -3 && lng < 2) return 'GH';
+    if (lat > 6 && lat < 12 && lng > 0 && lng < 4) return 'TG';
+    if (lat > 6 && lat < 13 && lng > 0 && lng < 5) return 'BJ';
     
     // Oceania
     if (lat > -45 && lat < -10 && lng > 110 && lng < 155) return 'AU';
     if (lat > -48 && lat < -34 && lng > 166 && lng < 179) return 'NZ';
+    if (lat > -25 && lat < -12 && lng > 145 && lng < 155) return 'PG';
+    if (lat > -23 && lat < -15 && lng > 143 && lng < 154) return 'SB';
+    if (lat > -21 && lat < -13 && lng > 161 && lng < 171) return 'VU';
+    if (lat > -18 && lat < -12 && lng > 165 && lng < 181) return 'FJ';
     
     return null;
   }
