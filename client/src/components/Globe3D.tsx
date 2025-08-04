@@ -98,8 +98,25 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     // Camera position
     camera.position.z = 5;
 
-    // Manual rotation for now (OrbitControls can be added later)
-    let controls: any = null;
+    // Orbit controls implementation
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let rotationSpeed = 0.005;
+    let zoomSpeed = 0.1;
+    let autoRotate = true;
+    let autoRotateSpeed = 0.005;
+
+    const controls = {
+      update: () => {},
+      reset: () => {
+        camera.position.set(0, 0, 5);
+        globe.rotation.set(0, 0, 0);
+        autoRotate = true;
+      },
+      enableAutoRotate: (enable: boolean) => {
+        autoRotate = enable;
+      }
+    };
 
     // Store references
     sceneRef.current = { scene, camera, renderer, globe, controls };
@@ -109,47 +126,96 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     function animate() {
       frameRef.current = requestAnimationFrame(animate);
       
-      if (controls) {
-        controls.update();
-      } else {
-        // Manual rotation if no controls
-        globe.rotation.y += 0.005;
+      // Auto rotation when not dragging
+      if (autoRotate && !isDragging) {
+        globe.rotation.y += autoRotateSpeed;
       }
       
       renderer.render(scene, camera);
     }
 
-    // Mouse interaction
+    // Mouse interaction for both controls and country selection
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
+    function onMouseDown(event: MouseEvent) {
+      isDragging = true;
+      autoRotate = false;
+      previousMousePosition = { x: event.clientX, y: event.clientY };
+      renderer.domElement.style.cursor = 'grabbing';
+    }
+
+    function onMouseMove(event: MouseEvent) {
+      if (isDragging) {
+        const deltaX = event.clientX - previousMousePosition.x;
+        const deltaY = event.clientY - previousMousePosition.y;
+        
+        globe.rotation.y += deltaX * rotationSpeed;
+        globe.rotation.x += deltaY * rotationSpeed;
+        
+        // Limit vertical rotation
+        globe.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, globe.rotation.x));
+        
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+      }
+    }
+
+    function onMouseUp() {
+      isDragging = false;
+      renderer.domElement.style.cursor = 'grab';
+      // Resume auto-rotation after a delay
+      setTimeout(() => {
+        if (!isDragging) autoRotate = true;
+      }, 2000);
+    }
+
     function onMouseClick(event: MouseEvent) {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      // Only trigger country selection if we weren't dragging
+      if (!isDragging) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(globe);
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(globe);
 
-      if (intersects.length > 0) {
-        const point = intersects[0].point.normalize();
-        
-        // Convert 3D point to lat/lng (simplified)
-        const lat = Math.asin(point.y) * (180 / Math.PI);
-        const lng = Math.atan2(point.z, point.x) * (180 / Math.PI);
-        
-        // Mock country detection based on coordinates
-        const mockCountry = getMockCountryFromCoords(lat, lng);
-        if (mockCountry && globeData[mockCountry]) {
-          setSelectedCountry({ code: mockCountry, data: globeData[mockCountry] });
-          if (onCountryClick) {
-            onCountryClick(mockCountry, globeData[mockCountry]);
+        if (intersects.length > 0) {
+          const point = intersects[0].point.normalize();
+          
+          // Convert 3D point to lat/lng (simplified)
+          const lat = Math.asin(point.y) * (180 / Math.PI);
+          const lng = Math.atan2(point.z, point.x) * (180 / Math.PI);
+          
+          // Mock country detection based on coordinates
+          const mockCountry = getMockCountryFromCoords(lat, lng);
+          if (mockCountry && globeData[mockCountry]) {
+            setSelectedCountry({ code: mockCountry, data: globeData[mockCountry] });
+            if (onCountryClick) {
+              onCountryClick(mockCountry, globeData[mockCountry]);
+            }
           }
         }
       }
     }
 
+    function onWheel(event: WheelEvent) {
+      event.preventDefault();
+      const scale = event.deltaY > 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
+      camera.position.multiplyScalar(scale);
+      
+      // Limit zoom
+      const distance = camera.position.length();
+      if (distance < 3) camera.position.normalize().multiplyScalar(3);
+      if (distance > 10) camera.position.normalize().multiplyScalar(10);
+    }
+
+    // Add event listeners
+    renderer.domElement.addEventListener('mousedown', onMouseDown);
+    renderer.domElement.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('click', onMouseClick);
+    renderer.domElement.addEventListener('wheel', onWheel);
+    renderer.domElement.style.cursor = 'grab';
 
     // Handle resize
     function handleResize() {
@@ -173,7 +239,11 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
       if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
+      renderer.domElement.removeEventListener('mousedown', onMouseDown);
+      renderer.domElement.removeEventListener('mousemove', onMouseMove);
+      renderer.domElement.removeEventListener('mouseup', onMouseUp);
       renderer.domElement.removeEventListener('click', onMouseClick);
+      renderer.domElement.removeEventListener('wheel', onWheel);
       window.removeEventListener('resize', handleResize);
       
       // Dispose of Three.js objects
@@ -208,6 +278,13 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     }
   };
 
+  const toggleAutoRotate = () => {
+    if (sceneRef.current?.controls) {
+      const currentAutoRotate = sceneRef.current.controls.enableAutoRotate;
+      sceneRef.current.controls.enableAutoRotate(!currentAutoRotate);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="relative w-full h-96 bg-gradient-to-br from-ocean-blue/10 to-earth-green/10 rounded-2xl overflow-hidden flex items-center justify-center">
@@ -227,6 +304,16 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
           variant="secondary"
           className="w-10 h-10 rounded-full shadow-md bg-white/90 hover:bg-white p-0"
           onClick={resetView}
+        >
+          <svg className="w-5 h-5 text-earth-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="w-10 h-10 rounded-full shadow-md bg-white/90 hover:bg-white p-0"
+          onClick={toggleAutoRotate}
         >
           <svg className="w-5 h-5 text-earth-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -262,8 +349,12 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
       )}
 
       {/* Instructions */}
-      <div className="absolute bottom-4 right-4 text-sm text-gray-600 bg-white/90 px-3 py-2 rounded-lg">
-        Drag to rotate • Scroll to zoom • Click countries
+      <div className="absolute bottom-4 right-4 text-sm text-gray-600 bg-white/90 px-3 py-2 rounded-lg shadow-sm">
+        <div className="flex flex-col space-y-1">
+          <span>🖱️ Drag to rotate</span>
+          <span>🔍 Scroll to zoom</span>
+          <span>🌍 Click countries for data</span>
+        </div>
       </div>
     </div>
   );

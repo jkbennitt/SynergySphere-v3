@@ -188,11 +188,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = await storage.getUser(solution.userId);
-      const comments = await storage.getCommentsByolution(id);
+      const comments = await storage.getCommentsBySolution(id);
       
       // Get user data for comments
       const commentsWithUsers = await Promise.all(
-        comments.map(async (comment) => {
+        comments.map(async (comment: any) => {
           const commentUser = await storage.getUser(comment.userId);
           return {
             ...comment,

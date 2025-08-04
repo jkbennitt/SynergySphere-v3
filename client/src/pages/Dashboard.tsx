@@ -7,10 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { type Solution, type UserProgress } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import PersonalizedInsights from "@/components/PersonalizedInsights";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: userSolutions = [], isLoading: solutionsLoading } = useQuery<Solution[]>({
     queryKey: ['/api/users', user?.id, 'solutions'],
@@ -121,11 +124,11 @@ export default function Dashboard() {
                 </div>
 
                 {/* Badges */}
-                {userProgress?.badges && userProgress.badges.length > 0 && (
+                {userProgress?.badges && Array.isArray(userProgress.badges) && userProgress.badges.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-medium text-gray-700">Badges Earned</h4>
                     <div className="space-y-2">
-                      {(userProgress.badges as string[]).map((badge) => (
+                      {(userProgress.badges as string[]).map((badge: string) => (
                         <div key={badge} className="flex items-center space-x-2">
                           <div className="w-6 h-6 bg-earth-green rounded-full flex items-center justify-center">
                             <span className="text-xs">{getBadgeIcon(badge)}</span>
@@ -240,6 +243,11 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            {/* Personalized Climate Insights */}
+            <div className="mb-8">
+              <PersonalizedInsights />
+            </div>
+
             {/* Recent Solutions */}
             <Card className="shadow-lg border-earth-green/10">
               <CardHeader className="flex flex-row items-center justify-between">
@@ -317,11 +325,16 @@ export default function Dashboard() {
                             className="text-earth-green hover:text-forest-green"
                             onClick={() => {
                               if (solution.shareableLink) {
-                                navigator.clipboard.writeText(`${window.location.origin}/solution/${solution.shareableLink}`);
+                                const shareUrl = `${window.location.origin}/solution/${solution.shareableLink}`;
+                                navigator.clipboard.writeText(shareUrl);
+                                toast({
+                                  title: "Link Copied!",
+                                  description: "Share link has been copied to your clipboard.",
+                                });
                               }
                             }}
                           >
-                            Share →
+                            📋 Copy Link
                           </Button>
                         </div>
                       </div>

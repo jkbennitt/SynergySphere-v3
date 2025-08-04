@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
+import SharedSolution from "@/pages/SharedSolution";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -25,7 +26,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth" component={Auth} />
       <Route path="/dashboard" component={() => user ? <Dashboard /> : <Auth />} />
-      <Route path="/solution/:link" component={Home} />
+      <Route path="/solution/:link" component={SharedSolution} />
       <Route component={NotFound} />
     </Switch>
   );
