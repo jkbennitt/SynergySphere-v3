@@ -255,20 +255,61 @@ export default function Globe3D({ onCountryClick, activeDataLayer = "co2_emissio
     };
   }, [isLoading, globeData, onCountryClick]);
 
-  // Mock function to map coordinates to countries (simplified)
+  // Enhanced function to map coordinates to countries
   function getMockCountryFromCoords(lat: number, lng: number): string | null {
-    // This is a very simplified mapping for demo purposes
-    // In a real app, you'd use proper geographic data
-    if (lat > 30 && lat < 50 && lng > -130 && lng < -60) return 'US';
-    if (lat > 20 && lat < 50 && lng > 70 && lng < 140) return 'CN';
-    if (lat > 5 && lat < 35 && lng > 65 && lng < 95) return 'IN';
-    if (lat > 50 && lat < 70 && lng > 30 && lng < 180) return 'RU';
-    if (lat > 30 && lat < 46 && lng > 130 && lng < 146) return 'JP';
-    if (lat > 47 && lat < 55 && lng > 5 && lng < 15) return 'DE';
+    // North America
+    if (lat > 25 && lat < 50 && lng > -130 && lng < -65) return 'US';
+    if (lat > 45 && lat < 75 && lng > -140 && lng < -55) return 'CA';
+    if (lat > 15 && lat < 32 && lng > -117 && lng < -86) return 'MX';
+    
+    // South America
     if (lat > -35 && lat < 5 && lng > -75 && lng < -35) return 'BR';
-    if (lat > 45 && lat < 75 && lng > -140 && lng < -50) return 'CA';
-    if (lat > -45 && lat < -10 && lng > 110 && lng < 155) return 'AU';
+    if (lat > -55 && lat < -20 && lng > -75 && lng < -53) return 'AR';
+    if (lat > -20 && lat < 12 && lng > -85 && lng < -66) return 'PE';
+    if (lat > -5 && lat < 13 && lng > -82 && lng < -66) return 'CO';
+    if (lat > 0 && lat < 16 && lng > -73 && lng < -59) return 'VE';
+    
+    // Europe
+    if (lat > 47 && lat < 55 && lng > 5 && lng < 15) return 'DE';
+    if (lat > 41 && lat < 51 && lng > -5 && lng < 10) return 'FR';
     if (lat > 50 && lat < 60 && lng > -8 && lng < 2) return 'GB';
+    if (lat > 36 && lat < 44 && lng > -10 && lng < 5) return 'ES';
+    if (lat > 35 && lat < 47 && lng > 6 && lng < 19) return 'IT';
+    if (lat > 44 && lat < 70 && lng > 4 && lng < 32) return 'NO';
+    if (lat > 55 && lat < 70 && lng > 8 && lng < 25) return 'SE';
+    if (lat > 48 && lat < 69 && lng > 8 && lng < 32) return 'FI';
+    if (lat > 47 && lat < 56 && lng > 14 && lng < 25) return 'PL';
+    
+    // Asia
+    if (lat > 15 && lat < 50 && lng > 70 && lng < 140) return 'CN';
+    if (lat > 5 && lat < 37 && lng > 65 && lng < 97) return 'IN';
+    if (lat > 30 && lat < 46 && lng > 129 && lng < 146) return 'JP';
+    if (lat > 35 && lat < 43 && lng > 124 && lng < 132) return 'KR';
+    if (lat > -10 && lat < 30 && lng > 95 && lng < 180) return 'ID';
+    if (lat > 5 && lat < 25 && lng > 97 && lng < 106) return 'TH';
+    if (lat > 8 && lat < 23 && lng > 102 && lng < 110) return 'VN';
+    if (lat > 1 && lat < 8 && lng > 103 && lng < 105) return 'SG';
+    if (lat > 36 && lat < 42 && lng > 26 && lng < 45) return 'TR';
+    if (lat > 24 && lat < 40 && lng > 44 && lng < 64) return 'IR';
+    if (lat > 29 && lat < 38 && lng > 34 && lng < 49) return 'IQ';
+    if (lat > 12 && lat < 34 && lng > 34 && lng < 56) return 'SA';
+    
+    // Russia (large territory)
+    if (lat > 50 && lat < 82 && lng > 19 && lng < 180) return 'RU';
+    if (lat > 50 && lat < 82 && lng > -180 && lng < -130) return 'RU';
+    
+    // Africa
+    if (lat > 22 && lat < 38 && lng > 24 && lng < 37) return 'EG';
+    if (lat > -35 && lat < -22 && lng > 16 && lng < 33) return 'ZA';
+    if (lat > 3 && lat < 14 && lng > 2 && lng < 15) return 'NG';
+    if (lat > -12 && lat < 5 && lng > 12 && lng < 32) return 'CD';
+    if (lat > -15 && lat < 15 && lng > 8 && lng < 24) return 'TD';
+    if (lat > 8 && lat < 23 && lng > -18 && lng < 16) return 'LY';
+    
+    // Oceania
+    if (lat > -45 && lat < -10 && lng > 110 && lng < 155) return 'AU';
+    if (lat > -48 && lat < -34 && lng > 166 && lng < 179) return 'NZ';
+    
     return null;
   }
 
@@ -371,7 +412,35 @@ function getCountryName(code: string): string {
     BR: "Brazil",
     CA: "Canada",
     AU: "Australia",
-    GB: "United Kingdom"
+    GB: "United Kingdom",
+    MX: "Mexico",
+    AR: "Argentina",
+    PE: "Peru",
+    CO: "Colombia",
+    VE: "Venezuela",
+    FR: "France",
+    ES: "Spain",
+    IT: "Italy",
+    NO: "Norway",
+    SE: "Sweden",
+    FI: "Finland",
+    PL: "Poland",
+    KR: "South Korea",
+    ID: "Indonesia",
+    TH: "Thailand",
+    VN: "Vietnam",
+    SG: "Singapore",
+    TR: "Turkey",
+    IR: "Iran",
+    IQ: "Iraq",
+    SA: "Saudi Arabia",
+    EG: "Egypt",
+    ZA: "South Africa",
+    NG: "Nigeria",
+    CD: "DR Congo",
+    TD: "Chad",
+    LY: "Libya",
+    NZ: "New Zealand"
   };
   return countryNames[code] || code;
 }

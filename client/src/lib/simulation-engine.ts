@@ -10,14 +10,30 @@ const POLICY_MULTIPLIERS = {
   maximum: 2.0
 };
 
-// Economic factors
-const SOLAR_COST_PER_PERCENT = 50; // Billion USD per 1% global adoption
-const WIND_COST_PER_PERCENT = 40; // Billion USD per 1% global adoption
+// Economic factors with market variability
+const SOLAR_COST_BASE = 50; // Base cost billion USD per 1% global adoption
+const WIND_COST_BASE = 40; // Base cost billion USD per 1% global adoption
 const POLICY_COST_MULTIPLIER = 0.3; // Additional cost for policy implementation
 
 // Climate sensitivity parameters
 const CLIMATE_SENSITIVITY = 3.0; // °C per CO2 doubling
 const CO2_TO_TEMP_FACTOR = 0.0015; // Simplified temperature change per GtCO2e
+
+// Add randomness factors for more varied results
+function getRandomVariance(baseValue: number, variancePercent: number): number {
+  const variance = baseValue * (variancePercent / 100);
+  return baseValue + (Math.random() - 0.5) * 2 * variance;
+}
+
+// Market dynamics affecting costs
+function calculateDynamicCosts(adoption: number, baseCost: number): number {
+  // Economies of scale reduce costs, but supply constraints increase them
+  const scaleDiscount = Math.min(0.3, adoption / 200); // Up to 30% discount
+  const supplyPressure = adoption > 60 ? Math.pow((adoption - 60) / 100, 1.5) : 0;
+  const marketVariance = getRandomVariance(1, 15); // ±15% market fluctuation
+  
+  return baseCost * (1 - scaleDiscount + supplyPressure) * marketVariance;
+}
 
 export function runSimulation(challenge: string, parameters: SimulationParameters): SimulationOutcomes {
   switch (challenge) {
@@ -33,44 +49,54 @@ export function runSimulation(challenge: string, parameters: SimulationParameter
 function simulateEmissionReduction(parameters: SimulationParameters): SimulationOutcomes {
   const { solarEnergyAdoption, windEnergyAdoption, policyStrength } = parameters;
   
-  // Calculate renewable energy impact
+  // Calculate renewable energy impact with diminishing returns
   const totalRenewableAdoption = solarEnergyAdoption + windEnergyAdoption;
-  const policyMultiplier = POLICY_MULTIPLIERS[policyStrength];
+  const policyMultiplier = getRandomVariance(POLICY_MULTIPLIERS[policyStrength], 10);
   
-  // Calculate CO2 reduction
-  const maxPossibleReduction = 65; // Maximum realistic reduction percentage
-  const renewableContribution = (totalRenewableAdoption / 200) * maxPossibleReduction; // Normalized to 100%
-  const policyBonus = (policyMultiplier - 1) * 10; // Policy adds 0-10% additional reduction
-  const co2Reduction = Math.min(maxPossibleReduction, renewableContribution + policyBonus);
+  // Non-linear CO2 reduction with technological challenges
+  const maxPossibleReduction = getRandomVariance(65, 8); // Market variability
+  const renewableEfficiency = Math.pow(totalRenewableAdoption / 200, 0.85); // Diminishing returns
+  const renewableContribution = renewableEfficiency * maxPossibleReduction;
+  const policyBonus = (policyMultiplier - 1) * getRandomVariance(10, 25);
   
-  // Calculate temperature impact
+  // Add synergy effects and technological bottlenecks
+  const synergyBonus = Math.abs(solarEnergyAdoption - windEnergyAdoption) < 30 ? 
+    getRandomVariance(8, 30) : getRandomVariance(2, 50);
+  const bottleneckPenalty = totalRenewableAdoption > 120 ? 
+    Math.pow((totalRenewableAdoption - 120) / 80, 1.2) * getRandomVariance(5, 40) : 0;
+    
+  const co2Reduction = Math.max(5, Math.min(maxPossibleReduction, 
+    renewableContribution + policyBonus + synergyBonus - bottleneckPenalty));
+  
+  // Temperature impact with climate feedback loops
   const emissionReduction = GLOBAL_EMISSIONS_BASELINE * (co2Reduction / 100);
-  const temperatureChange = 2.2 - (emissionReduction * CO2_TO_TEMP_FACTOR * 10); // Start from 2.2°C trajectory
+  const baselineTemp = getRandomVariance(2.2, 12); // Climate uncertainty
+  const tempReduction = emissionReduction * CO2_TO_TEMP_FACTOR * getRandomVariance(10, 20);
+  const feedbackFactor = co2Reduction > 40 ? getRandomVariance(1.15, 15) : getRandomVariance(0.95, 10);
+  const temperatureChange = Math.max(1.3, baselineTemp - (tempReduction * feedbackFactor));
   
-  // Calculate economic costs
-  const solarCost = solarEnergyAdoption * SOLAR_COST_PER_PERCENT;
-  const windCost = windEnergyAdoption * WIND_COST_PER_PERCENT;
+  // Dynamic economic costs with market realities
+  const solarCost = calculateDynamicCosts(solarEnergyAdoption, SOLAR_COST_BASE);
+  const windCost = calculateDynamicCosts(windEnergyAdoption, WIND_COST_BASE);
+  const infrastructureCost = Math.pow(totalRenewableAdoption / 100, 1.3) * getRandomVariance(500, 25);
   const policyCost = (solarCost + windCost) * POLICY_COST_MULTIPLIER * (policyMultiplier - 1);
-  const totalCost = solarCost + windCost + policyCost;
+  const totalCost = solarCost + windCost + infrastructureCost + policyCost;
   
-  // Calculate ROI (simplified)
-  const avoidedClimateCosts = co2Reduction * 100; // Billion USD saved per % reduction
-  const roi = (avoidedClimateCosts / totalCost) * 100;
+  // ROI with economic uncertainties
+  const avoidedClimateCosts = co2Reduction * getRandomVariance(120, 35); // Economic damage variance
+  const economicBenefits = totalRenewableAdoption * getRandomVariance(25, 20); // Job creation, energy independence
+  const roi = Math.max(-20, ((avoidedClimateCosts + economicBenefits) / totalCost) * 100);
   
-  // Calculate feasibility score
+  // Calculate scores with more realistic variance
   const feasibilityScore = calculateFeasibilityScore(solarEnergyAdoption, windEnergyAdoption, policyStrength);
-  
-  // Calculate sustainability score
   const sustainabilityScore = calculateSustainabilityScore(totalRenewableAdoption, temperatureChange);
-  
-  // Calculate global impact score
   const globalImpactScore = calculateGlobalImpactScore(co2Reduction, temperatureChange, feasibilityScore);
   
   return {
-    temperatureChange: Math.max(1.5, temperatureChange), // Minimum 1.5°C (Paris Agreement goal)
+    temperatureChange,
     co2Reduction,
     economicImpact: totalCost,
-    roi: Math.max(0, roi),
+    roi,
     feasibilityScore,
     sustainabilityScore,
     globalImpactScore
@@ -78,28 +104,47 @@ function simulateEmissionReduction(parameters: SimulationParameters): Simulation
 }
 
 function simulateReforestation(parameters: SimulationParameters): SimulationOutcomes {
-  // Simplified reforestation model
   const { solarEnergyAdoption, windEnergyAdoption, policyStrength } = parameters;
-  const policyMultiplier = POLICY_MULTIPLIERS[policyStrength];
+  const policyMultiplier = getRandomVariance(POLICY_MULTIPLIERS[policyStrength], 12);
   
-  // Reforestation absorbs CO2 but at lower rates than renewable energy prevents emissions
-  const reforestationEffectiveness = 0.6; // 60% as effective as emission reduction
-  const totalEnviroAction = (solarEnergyAdoption + windEnergyAdoption) * reforestationEffectiveness;
-  const co2Reduction = (totalEnviroAction / 200) * 40 * policyMultiplier; // Max 40% reduction via reforestation
+  // Reforestation has different dynamics - slower but more sustainable
+  const forestEffectiveness = getRandomVariance(0.45, 30); // More variable effectiveness
+  const totalForestAction = solarEnergyAdoption + windEnergyAdoption; // Interpret as forest coverage %
   
-  const temperatureChange = 2.1 - (co2Reduction * CO2_TO_TEMP_FACTOR * 8);
-  const economicImpact = totalEnviroAction * 20; // Lower cost per unit for reforestation
-  const roi = (co2Reduction * 80) / economicImpact * 100; // Different ROI calculation
+  // Reforestation has delayed but compound effects
+  const immediateCO2 = (totalForestAction / 200) * 25 * forestEffectiveness;
+  const longTermCO2 = (totalForestAction / 200) * 35 * Math.pow(policyMultiplier, 1.2);
+  const co2Reduction = Math.min(55, immediateCO2 + longTermCO2 * getRandomVariance(0.7, 25));
+  
+  // Temperature benefits accumulate over time with ecosystem effects
+  const baselineTemp = getRandomVariance(2.05, 8);
+  const directCooling = co2Reduction * CO2_TO_TEMP_FACTOR * getRandomVariance(6, 15);
+  const albedoEffect = totalForestAction > 50 ? getRandomVariance(0.08, 30) : 0; // Cooling effect
+  const biodiversityBonus = totalForestAction > 70 ? getRandomVariance(0.05, 40) : 0;
+  const temperatureChange = Math.max(1.4, baselineTemp - directCooling - albedoEffect - biodiversityBonus);
+  
+  // Economic model: Lower upfront costs but longer payback
+  const landCost = totalForestAction * getRandomVariance(15, 35); // Variable land prices
+  const plantingCost = totalForestAction * getRandomVariance(8, 20);
+  const maintenanceCost = totalForestAction * getRandomVariance(12, 25) * (policyMultiplier - 0.5);
+  const economicImpact = landCost + plantingCost + maintenanceCost;
+  
+  // ROI includes ecosystem services and carbon credits
+  const carbonCredit = co2Reduction * getRandomVariance(45, 30);
+  const ecosystemServices = totalForestAction * getRandomVariance(35, 40); // Tourism, water, etc.
+  const timberValue = totalForestAction > 60 ? totalForestAction * getRandomVariance(18, 50) : 0;
+  const totalBenefits = carbonCredit + ecosystemServices + timberValue;
+  const roi = Math.max(-15, (totalBenefits / economicImpact) * 100);
   
   const feasibilityScore = calculateFeasibilityScore(solarEnergyAdoption, windEnergyAdoption, policyStrength, 'reforestation');
-  const sustainabilityScore = Math.min(100, calculateSustainabilityScore(totalEnviroAction, temperatureChange) + 15); // Bonus for ecosystem benefits
+  const sustainabilityScore = Math.min(100, calculateSustainabilityScore(totalForestAction, temperatureChange) + getRandomVariance(18, 25));
   const globalImpactScore = calculateGlobalImpactScore(co2Reduction, temperatureChange, feasibilityScore);
   
   return {
-    temperatureChange: Math.max(1.5, temperatureChange),
+    temperatureChange,
     co2Reduction,
     economicImpact,
-    roi: Math.max(0, roi),
+    roi,
     feasibilityScore,
     sustainabilityScore,
     globalImpactScore

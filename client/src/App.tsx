@@ -11,9 +11,9 @@ import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-soft-white">
         <div className="loading-spinner w-8 h-8"></div>

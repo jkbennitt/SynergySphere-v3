@@ -11,29 +11,29 @@ import PersonalizedInsights from "@/components/PersonalizedInsights";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  // Type assertion for user data
+  const typedUser = user as any;
+
   const { data: userSolutions = [], isLoading: solutionsLoading } = useQuery<Solution[]>({
-    queryKey: ['/api/users', user?.id, 'solutions'],
-    enabled: !!user?.id,
+    queryKey: ['/api/users', typedUser?.id, 'solutions'],
+    enabled: !!typedUser?.id,
   });
 
   const { data: userProgress, isLoading: progressLoading } = useQuery<UserProgress>({
-    queryKey: ['/api/users', user?.id, 'progress'],
-    enabled: !!user?.id,
+    queryKey: ['/api/users', typedUser?.id, 'progress'],
+    enabled: !!typedUser?.id,
   });
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    // Navigate to Replit logout endpoint
+    window.location.href = '/api/logout';
   };
 
-  if (!user) {
+  if (!typedUser) {
     setLocation('/auth');
     return null;
   }
@@ -67,18 +67,18 @@ export default function Dashboard() {
             <div className="flex items-center space-x-6">
               <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
                 <span className="text-3xl font-bold text-white">
-                  {user.firstName?.charAt(0) || user.username?.charAt(0) || '?'}
+                  {typedUser.firstName?.charAt(0) || typedUser.username?.charAt(0) || '?'}
                 </span>
               </div>
               <div>
                 <h1 className="font-quicksand font-bold text-4xl">
-                  Welcome back, {user.firstName || user.username}!
+                  Welcome back, {typedUser.firstName || typedUser.username}!
                 </h1>
                 <p className="text-white/80 text-lg">
-                  {user.bio || "Ready to shape our planet's future?"}
+                  {typedUser.bio || "Ready to shape our planet's future?"}
                 </p>
-                {user.location && (
-                  <p className="text-white/70 text-sm mt-1">📍 {user.location}</p>
+                {typedUser.location && (
+                  <p className="text-white/70 text-sm mt-1">📍 {typedUser.location}</p>
                 )}
               </div>
             </div>
@@ -114,13 +114,13 @@ export default function Dashboard() {
                 <div className="text-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-earth-green to-forest-green rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl font-bold text-white">
-                      {user.firstName?.charAt(0) || user.username?.charAt(0) || '?'}
+                      {typedUser.firstName?.charAt(0) || typedUser.username?.charAt(0) || '?'}
                     </span>
                   </div>
                   <h3 className="font-quicksand font-semibold text-lg text-earth-green">
-                    {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username}
+                    {typedUser.firstName && typedUser.lastName ? `${typedUser.firstName} ${typedUser.lastName}` : typedUser.username}
                   </h3>
-                  <p className="text-sm text-gray-600">@{user.username}</p>
+                  <p className="text-sm text-gray-600">@{typedUser.username}</p>
                 </div>
 
                 {/* Badges */}
@@ -128,7 +128,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <h4 className="font-medium text-gray-700">Badges Earned</h4>
                     <div className="space-y-2">
-                      {(userProgress.badges as string[]).map((badge: string) => (
+                      {(userProgress.badges as string[]).map((badge: string, index: number) => (
                         <div key={badge} className="flex items-center space-x-2">
                           <div className="w-6 h-6 bg-earth-green rounded-full flex items-center justify-center">
                             <span className="text-xs">{getBadgeIcon(badge)}</span>
