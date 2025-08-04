@@ -148,3 +148,15 @@ Changelog:
 ```
 Preferred communication style: Simple, everyday language.
 ```
+## Documentation
+The project maintains comprehensive documentation in the `/docs` folder:
+- **Architecture**: System design and technical specifications
+- **Development**: Setup guides and deployment procedures
+- **User**: API documentation and user guides
+- **Testing**: Quality assurance and testing strategies
+- **Planner**: Versioned PRDs and sprint planning documents
+  - MVP Requirements (v1.0) - Core feature specifications
+  - User Journey (v1.1) - Complete user experience design
+  - Sprint Planning (v1.0) - Storypoint-based planning template
+
+All PRD documents include version control and change tracking to monitor refinements and maintain project alignment.
